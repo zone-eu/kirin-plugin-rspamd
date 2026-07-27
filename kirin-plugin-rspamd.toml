@@ -1,0 +1,49 @@
+["modules/kirin-plugin-rspamd"]
+enabled = "receiver"
+ordering = 50
+host = "localhost"
+port = 11333
+# unixSocket = "/run/rspamd/worker-controller.sock"
+timeout = 29
+addHeaders = "sometimes" # "always", "never", or "sometimes"
+subject = "[SPAM] %s"
+
+["modules/kirin-plugin-rspamd".dkim]
+enabled = true
+
+["modules/kirin-plugin-rspamd".header]
+bar = "X-Rspamd-Bar"
+report = "X-Rspamd-Report"
+score = "X-Rspamd-Score"
+
+["modules/kirin-plugin-rspamd".check]
+authenticated = false
+privateIp = false
+localIp = false
+
+["modules/kirin-plugin-rspamd".reject]
+message = "Detected as spam"
+spam = true
+authenticated = false
+
+["modules/kirin-plugin-rspamd".rewriteSubject]
+enabled = true
+
+["modules/kirin-plugin-rspamd".milterHeaders]
+enabled = true
+
+["modules/kirin-plugin-rspamd".smtpMessage]
+enabled = true
+
+["modules/kirin-plugin-rspamd".softReject]
+enabled = true
+message = "Deferred by policy"
+
+["modules/kirin-plugin-rspamd".defer]
+error = false
+timeout = false
+
+["modules/kirin-plugin-rspamd".spamBar]
+positive = "+"
+negative = "-"
+neutral = "/"

@@ -1,0 +1,57 @@
+{
+    "name": "kirin-plugin-rspamd",
+    "version": "0.0.1",
+    "private": true,
+    "description": "Rspamd receiver plugin for Kirin",
+    "keywords": [
+        "kirin",
+        "rspamd",
+        "email",
+        "mail",
+        "smtp",
+        "mail-server",
+        "receiver",
+        "plugin",
+        "zone-mail-suite",
+        "zms"
+    ],
+    "author": "NickOvt",
+    "license": "EUPL-1.2",
+    "homepage": "https://github.com/zone-eu/kirin-plugin-rspamd#readme",
+    "bugs": {
+        "url": "https://github.com/zone-eu/kirin-plugin-rspamd/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/zone-eu/kirin-plugin-rspamd.git"
+    },
+    "type": "commonjs",
+    "main": "index.js",
+    "files": [
+        "index.js",
+        "kirin-plugin-rspamd.toml",
+        "LICENSE",
+        "README.md"
+    ],
+    "scripts": {
+        "test": "node --test",
+        "lint": "eslint .",
+        "types": "tsc --project tsconfig.json",
+        "check": "npm run lint && npm run types && npm test",
+        "update": "rm -rf node_modules package-lock.json && ncu -u && npm install"
+    },
+    "dependencies": {
+        "haraka-dsn": "1.1.0"
+    },
+    "devDependencies": {
+        "@types/node": "25.9.1",
+        "@zone-eu/types": "^0.1.6",
+        "eslint": "10.7.0",
+        "eslint-config-nodemailer": "1.2.0",
+        "eslint-config-prettier": "10.1.8",
+        "typescript": "6.0.3"
+    },
+    "engines": {
+        "node": ">=20"
+    }
+}

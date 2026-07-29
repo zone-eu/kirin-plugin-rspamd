@@ -7,6 +7,7 @@ Kirin envelope passed to the hook:
 - Rspamd `/checkv2` requests over TCP or a Unix socket
 - sender, recipients, queue ID, origin, hostname, HELO, authenticated user,
   and TLS metadata from the Kirin envelope
+- SPF and forward-confirmed reverse DNS results supplied by earlier plugins
 - authenticated, local-IP, and private-IP skip rules
 - hard reject and soft reject actions
 - configurable fail-open or temporary-failure behavior
@@ -34,6 +35,10 @@ Rspamd-provided milter header changes remain controlled separately by
 Configuration uses the camelCase keys shown in
 [`kirin-plugin-rspamd.toml`](kirin-plugin-rspamd.toml). The plugin merges
 these values with its defaults.
+
+Plugins run in ascending `ordering`. Configure SPF and forward-confirmed
+reverse DNS plugins with a lower ordering value than this plugin so their
+results are available in the Rspamd request.
 
 ## License
 

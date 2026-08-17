@@ -1,7 +1,6 @@
 {
     "name": "@zone-eu/kirin-plugin-rspamd",
     "version": "0.0.1",
-    "private": true,
     "description": "Rspamd receiver plugin for Kirin",
     "keywords": [
         "kirin",

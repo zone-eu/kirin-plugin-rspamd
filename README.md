@@ -36,6 +36,10 @@ Configuration uses the camelCase keys shown in
 [`kirin-plugin-rspamd.toml`](kirin-plugin-rspamd.toml). The plugin merges
 these values with its defaults.
 
+Relay-based scan exclusion is not currently supported because Kirin does not
+expose relay state to plugins. Authenticated clients remain controlled by
+`check.authenticated`.
+
 Plugins run in ascending `ordering`. Configure SPF and forward-confirmed
 reverse DNS plugins with a lower ordering value than this plugin so their
 results are available in the Rspamd request.

@@ -2,7 +2,9 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
 const net = require("node:net");
+const os = require("node:os");
 const { afterEach, describe, it } = require("node:test");
 const {
   clearInterval,
@@ -328,6 +330,16 @@ describe("kirin-plugin-rspamd", () => {
     assert.equal(typeof pluginModule.init, "function");
   });
 
+  it("ships configuration for the scoped package name", () => {
+    const config = fs.readFileSync(
+      require.resolve("../kirin-plugin-rspamd.toml"),
+      "utf8",
+    );
+
+    assert.match(config, /\["modules\/@zone-eu\/kirin-plugin-rspamd"\]/);
+    assert.doesNotMatch(config, /\["modules\/kirin-plugin-rspamd"/);
+  });
+
   it("sends Kirin metadata and applies accepted Rspamd changes", async () => {
     const server = await createRspamdServer({
       action: "add header",
@@ -485,6 +497,77 @@ describe("kirin-plugin-rspamd", () => {
     assert.deepEqual(privateClient.results.get("rspamd"), {
       skip: "private_ip",
     });
+  });
+
+  it("classifies local address ranges and bound interfaces", async (t) => {
+    t.mock.method(os, "networkInterfaces", () => ({
+      ethernet: [
+        {
+          address: "203.0.113.77",
+          netmask: "255.255.255.255",
+          family: "IPv4",
+          mac: "00:00:00:00:00:00",
+          internal: false,
+          cidr: "203.0.113.77/32",
+        },
+      ],
+    }));
+
+    await Promise.all(
+      [
+        "0.0.0.0",
+        "127.0.0.1",
+        "127.200.10.20",
+        "169.254.1.2",
+        "::",
+        "::1",
+        "fe80::1",
+        "febf::1",
+        "fc00::1",
+        "fdff::1",
+        "::ffff:127.0.0.1",
+        "::ffff:cb00:714d",
+        "203.0.113.77",
+      ].map(async (origin) => {
+        const context = createContext({ envelope: { origin } });
+        const plugin = await initialize(context, {
+          host: "invalid.example",
+          check: {
+            localIp: false,
+            privateIp: true,
+          },
+        });
+
+        await plugin.run();
+        assert.deepEqual(context.results.get("rspamd"), {
+          skip: "local_ip",
+        });
+      }),
+    );
+  });
+
+  it("can scan local addresses while skipping other private clients", async () => {
+    const server = await createRspamdServer({
+      action: "no action",
+      score: 0,
+      symbols: {},
+    });
+    const context = createContext({ envelope: { origin: "fe80::1" } });
+    context.connection.remote.is_private = true;
+    const plugin = await initialize(context, {
+      host: "127.0.0.1",
+      port: server.port,
+      check: {
+        localIp: true,
+        privateIp: false,
+      },
+    });
+
+    await plugin.run();
+    const request = (await server.request).toString("utf8");
+
+    assert.match(request, /\r\nIP: fe80::1\r\n/);
+    assert.equal(context.results.get("rspamd").score, 0);
   });
 
   it("fails open on invalid replies unless defer.error is enabled", async () => {

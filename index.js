@@ -20,9 +20,18 @@
  */
 
 const net = require("node:net");
-const DSN = require("haraka-dsn");
+const os = require("node:os");
 
 const PLUGIN_NAME = "rspamd";
+
+const LOCAL_NETWORKS = new net.BlockList();
+LOCAL_NETWORKS.addAddress("0.0.0.0", "ipv4");
+LOCAL_NETWORKS.addSubnet("127.0.0.0", 8, "ipv4");
+LOCAL_NETWORKS.addSubnet("169.254.0.0", 16, "ipv4");
+LOCAL_NETWORKS.addAddress("::", "ipv6");
+LOCAL_NETWORKS.addAddress("::1", "ipv6");
+LOCAL_NETWORKS.addSubnet("fe80::", 10, "ipv6");
+LOCAL_NETWORKS.addSubnet("fc00::", 7, "ipv6");
 
 /** @type {RspamdConfig} */
 const DEFAULT_CONFIG = {
@@ -262,6 +271,16 @@ const requestRspamd = (options, body, timeout) =>
   });
 
 /**
+ * @param {string} address
+ * @returns {string}
+ */
+const normalizeIpAddress = (address) =>
+  address
+    .toLowerCase()
+    .replace(/^\[([^\]]+)\]$/, "$1")
+    .replace(/%.+$/, "");
+
+/**
  * @param {string | false | undefined} address
  * @returns {boolean}
  */
@@ -270,15 +289,32 @@ const isLocalAddress = (address) => {
     return false;
   }
 
-  const normalized = address
-    .toLowerCase()
-    .replace(/^\[|\]$/g, "")
-    .replace(/^::ffff:/, "");
-  return (
-    normalized === "::1" ||
-    normalized === "0:0:0:0:0:0:0:1" ||
-    /^127(?:\.\d{1,3}){3}$/.test(normalized)
-  );
+  const normalized = normalizeIpAddress(address);
+  const family = net.isIP(normalized);
+  if (!family) {
+    return false;
+  }
+
+  const type = family === 4 ? "ipv4" : "ipv6";
+  if (LOCAL_NETWORKS.check(normalized, type)) {
+    return true;
+  }
+
+  const localInterfaces = new net.BlockList();
+  for (const addresses of Object.values(os.networkInterfaces())) {
+    for (const entry of addresses || []) {
+      const interfaceAddress = normalizeIpAddress(entry.address);
+      const interfaceFamily = net.isIP(interfaceAddress);
+      if (interfaceFamily) {
+        localInterfaces.addAddress(
+          interfaceAddress,
+          interfaceFamily === 4 ? "ipv4" : "ipv6",
+        );
+      }
+    }
+  }
+
+  return localInterfaces.check(normalized, type);
 };
 
 /**
@@ -701,11 +737,12 @@ const scanMessage = async (app, config, envelope, session) => {
   rewriteSubject(headers, response.data, config);
 
   if (config.softReject.enabled && response.data.action === "soft reject") {
-    const dsn = DSN.sec_unauthorized(
-      smtpMessage || config.softReject.message,
+    throw smtpReject(
+      app,
+      envelope,
       451,
+      `4.7.1 ${smtpMessage || config.softReject.message}`,
     );
-    throw smtpReject(app, envelope, dsn.code, dsn.reply);
   }
   if (wantsReject(response.data, envelope, config)) {
     throw smtpReject(app, envelope, 550, smtpMessage || config.reject.message);

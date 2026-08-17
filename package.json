@@ -39,9 +39,6 @@
         "check": "npm run lint && npm run types && npm test",
         "update": "rm -rf node_modules package-lock.json && ncu -u && npm install"
     },
-    "dependencies": {
-        "haraka-dsn": "1.1.0"
-    },
     "devDependencies": {
         "@types/node": "25.9.1",
         "@zone-eu/types": "^0.1.6",

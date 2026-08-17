@@ -24,6 +24,7 @@ const os = require("node:os");
 
 const PLUGIN_NAME = "rspamd";
 
+// Save local network subnets for future checks
 const LOCAL_NETWORKS = new net.BlockList();
 LOCAL_NETWORKS.addAddress("0.0.0.0", "ipv4");
 LOCAL_NETWORKS.addSubnet("127.0.0.0", 8, "ipv4");
